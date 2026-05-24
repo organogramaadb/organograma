@@ -75,6 +75,14 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .ocard.vaga{border-style:dashed;border-color:#bbb;background:#fafafa}
 .ocard-hd{background:#111;border-radius:5px 5px 0 0;padding:10px 12px}
 .ocard.vaga .ocard-hd{background:#888}
+.cor-picker{display:flex;gap:7px;align-items:center;padding:4px 0}
+.cor-sw{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0}
+.cor-sw:hover{transform:scale(1.18)}
+.cor-sw.ativo{border-color:#fff;box-shadow:0 0 0 2px #888;transform:scale(1.12)}
+.cor-sw[data-cor=""]{background:#111}
+.cor-sw[data-cor="#1a3a5c"]{background:#1a3a5c}
+.cor-sw[data-cor="#888"]{background:#888}
+.cor-sw[data-cor="#7a0000"]{background:#7a0000}
 .ocard-nv{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
 .ocard-st{font-size:11px;color:rgba(255,255,255,.75);margin-top:4px;line-height:1.3;font-style:italic}
 .ocard-bd{padding:10px 12px 4px}
@@ -173,6 +181,14 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 
 <div id="app">
   <header>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="height:34px;width:34px;flex-shrink:0;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.1)">
+      <defs><radialGradient id="adbg" cx="42%" cy="42%" r="62%"><stop offset="0%" stop-color="#FFE44D"/><stop offset="100%" stop-color="#EF7F1A"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="48" fill="url(#adbg)"/>
+      <path d="M32 8 Q50 0 68 8 Q72 18 64 22 Q50 28 36 22 Q28 18 32 8Z" fill="white" opacity=".92"/>
+      <path d="M7 62 Q0 48 8 38 Q18 30 26 36 Q32 44 28 56 Q22 66 12 68 Q6 68 7 62Z" fill="white" opacity=".92"/>
+      <path d="M93 62 Q100 48 92 38 Q82 30 74 36 Q68 44 72 56 Q78 66 88 68 Q94 68 93 62Z" fill="white" opacity=".92"/>
+      <text x="50" y="62" text-anchor="middle" font-size="22" font-weight="700" fill="#1a3da8" font-family="Georgia,serif" font-style="italic" letter-spacing="-0.5">AdB</text>
+    </svg>
     <div><div class="hbn">Organograma Institucional</div><div class="hbs">Amigos do Bem</div></div>
     <div class="hsp"></div>
     <div class="hsr"><input type="text" id="si" placeholder="Buscar nome, localidade..." oninput="onSrch(this.value)"></div>
@@ -275,7 +291,7 @@ const DEMO_NODES=[
   {id:'N001',nivel:1,nome_pessoa:'',localidade:'',setor:'',pai_id:null,status:'Ativo',
    vinculo:'',email:'',tel:'',admissao:'',obs:'',
    escopo:'',responsabilidades:'',entregas:'',projetos:'',
-   desenvolvimento:'',visao_ocupacao:0,visao_desempenho:'',ult_at:'',ult_usr:''}
+   desenvolvimento:'',visao_ocupacao:0,visao_desempenho:'',ult_at:'',ult_usr:'',cor_header:''}
 ];
 const S={user:null,selId:null,tab:'d',expanded:new Set(['N001']),editData:null,subParent:null,filters:{dir:'',loc:'',st:'',q:''}};
 let DB={nodes:[],access:[],log:[]};
@@ -412,7 +428,8 @@ function mkCard(node,kids){
   d.onclick=e=>{e.stopPropagation();selectNode(node.id);};
   const expBtn=hasKids?`<button class="btn-exp" onclick="event.stopPropagation();toggleNode('${node.id}')">${isExp?'&#9650;':'&#9660;'}</button>`:'';
   const addBtn=canAdd?`<button class="btn-sub" onclick="event.stopPropagation();openAddSub('${node.id}')">+ N&#237;vel abaixo</button>`:'';
-  d.innerHTML=`<div class="ocard-hd"><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
+  const hdStyle=node.status==='Vaga'?'':((node.cor_header&&node.cor_header!=='')?`style="background:${node.cor_header}"`:'');
+  d.innerHTML=`<div class="ocard-hd" ${hdStyle}><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
     <div class="ocard-bd"><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
     <div class="ocard-ft">${addBtn}${expBtn}</div>`;
   return d;
@@ -445,6 +462,11 @@ function openPanel(node){
 function closePanel(){$('sp').classList.add('shut');S.selId=null;S.editData=null;document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));}
 function setTab(t){S.tab=t;['d','e','h'].forEach(x=>$('tab-'+x).classList.toggle('on',x===t));if(!S.editData)return;renderPanelTab(t);}
 function fc(field,value){if(S.editData)S.editData[field]=value;}
+function setCor(cor){
+  if(!S.editData||!S.user.editar)return;
+  S.editData.cor_header=cor;
+  document.querySelectorAll('.cor-sw').forEach(el=>el.classList.toggle('ativo',el.dataset.cor===cor));
+}
 function renderPanelTab(t){
   const nd=S.editData,ce=S.user.editar,ro=ce?'':' readonly',ec=ce?' class="ed"':'';
   if(t==='d'){
@@ -460,6 +482,15 @@ function renderPanelTab(t){
         <select${ce?'':' disabled'}${ce?' class="ed"':''} onchange="fc('nivel',parseInt(this.value))">${NIVEIS.slice(1).map((v,i)=>`<option value="${i+1}"${nd.nivel===i+1?' selected':''}>${v}</option>`).join('')}</select></div></div>
       <div class="fr s1"><div class="fi"><label>Setor / Diretoria</label>
         <input${ro}${ec} value="${esc(nd.setor||'')}" placeholder="Ex: Diretoria Financeira" onchange="fc('setor',this.value)"></div></div>
+      <div class="fr s1"><div class="fi"><label>Cor da Faixa do Card</label>
+        <div class="cor-picker">${ce?`
+          <span title="Preto (padrão)" class="cor-sw${(nd.cor_header||'')==''?' ativo':''}" data-cor="" onclick="setCor('')"></span>
+          <span title="Azul Escuro" class="cor-sw${nd.cor_header==='#1a3a5c'?' ativo':''}" data-cor="#1a3a5c" onclick="setCor('#1a3a5c')"></span>
+          <span title="Cinza (Vagas)" class="cor-sw${nd.cor_header==='#888'?' ativo':''}" data-cor="#888" onclick="setCor('#888')"></span>
+          <span title="Vermelho Escuro" class="cor-sw${nd.cor_header==='#7a0000'?' ativo':''}" data-cor="#7a0000" onclick="setCor('#7a0000')"></span>
+          <span style="font-size:11px;color:#aaa;margin-left:4px">Clique para escolher</span>`
+        :`<span class="cor-sw" style="background:${nd.cor_header||'#111'};cursor:default"></span><span style="font-size:11px;color:#aaa;margin-left:8px">Sem permissão de edição</span>`}
+        </div></div></div>
       <div class="fr"><div class="fi"><label>Localidade</label>
         <input${ro}${ec} value="${esc(nd.localidade||'')}" onchange="fc('localidade',this.value)"></div>
         <div class="fi"><label>Tipo de Vínculo</label>
