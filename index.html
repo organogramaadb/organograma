@@ -303,8 +303,14 @@ function doLogin(ev){
 }
 function doLogout(){S.user=null;S.selId=null;$('app').classList.remove('on');$('lo').style.display='flex';$('eml').value='';}
 async function initApp(){await loadData();populateFilters();updateStats();renderChart();}
+const LS_KEY='orgdata_v1';
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify({nodes:DB.nodes,log:DB.log,ts:new Date().toISOString()}));}catch(e){}}
+function lsLoad(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(d&&Array.isArray(d.nodes)&&d.nodes.length)return d;}catch(e){}return null;}
+
 async function loadData(){
   if(CFG.DEMO||!CFG.GAS_URL){
+    const ls=lsLoad();
+    if(ls){DB={nodes:ls.nodes,access:JSON.parse(JSON.stringify(DEMO_ACCESS)),log:ls.log||[]};return;}
     DB={nodes:JSON.parse(JSON.stringify(DEMO_NODES)),access:JSON.parse(JSON.stringify(DEMO_ACCESS)),log:[]};
     return;
   }
@@ -312,19 +318,27 @@ async function loadData(){
     const r=await fetch(CFG.GAS_URL+'?action=getOrgData&email='+encodeURIComponent(S.user.email));
     const d=await r.json();
     if(d.error)throw new Error(d.error);
-    if(!Array.isArray(d.nodes))throw new Error('Formato inválido — verifique o Apps Script');
+    if(!Array.isArray(d.nodes))throw new Error('Formato inválido');
     DB=d;
+    lsSave();
   }catch(e){
-    toast('Usando dados locais ('+e.message+')');
-    DB={nodes:JSON.parse(JSON.stringify(DEMO_NODES)),access:JSON.parse(JSON.stringify(DEMO_ACCESS)),log:[]};
+    const ls=lsLoad();
+    if(ls){
+      DB={nodes:ls.nodes,access:JSON.parse(JSON.stringify(DEMO_ACCESS)),log:ls.log||[]};
+      toast('Modo local — GAS indisponível. Dados salvos localmente.','');
+    }else{
+      DB={nodes:JSON.parse(JSON.stringify(DEMO_NODES)),access:JSON.parse(JSON.stringify(DEMO_ACCESS)),log:[]};
+      toast('Iniciando novo organograma local.','');
+    }
   }
 }
 async function gasPost(action,payload){
+  lsSave();
   if(CFG.DEMO||!CFG.GAS_URL)return{ok:true};
   try{
     const r=await fetch(CFG.GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action,payload,userEmail:S.user.email})});
     return r.json();
-  }catch(e){return{ok:false,error:e.message};}
+  }catch(e){return{ok:true,local:true};}
 }
 function onSrch(v){S.filters.q=v.toLowerCase();renderChart();}
 function applyF(){S.filters.dir=$('fDir').value;S.filters.loc=$('fLoc').value;S.filters.st=$('fSt').value;renderChart();}
@@ -486,8 +500,9 @@ function saveNode(){
   const idx=DB.nodes.findIndex(n=>n.id===nd.id);
   if(idx<0){toast('Nó não encontrado','err');return;}
   DB.nodes[idx]=Object.assign({},nd);
+  lsSave();
   gasPost('saveNode',nd).then(r=>{
-    if(r.ok){toast('Salvo com sucesso','ok');}else{toast('Erro ao salvar: '+(r.error||'?'),'err');}
+    if(r.ok){toast(r.local?'Salvo localmente ✓':'Salvo com sucesso','ok');}else{toast('Erro ao salvar: '+(r.error||'?'),'err');}
   });
   $('phT').textContent=nd.status==='Vaga'?'Posição em Aberto':(nd.nome_pessoa||NIVEIS[nd.nivel]);
   populateFilters();updateStats();renderChart();
