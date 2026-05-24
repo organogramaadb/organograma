@@ -457,7 +457,7 @@ function renderPanelTab(t){
         <select${ce?'':' disabled'} onchange="fc('status',this.value)">${['Ativo','Vaga','Inativo'].map(s=>`<option${nd.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
       </div>
       <div class="fr s1"><div class="fi"><label>Nível Hierárquico</label>
-        <input readonly value="${esc(NIVEIS[nd.nivel]||'')}"></div></div>
+        <select${ce?'':' disabled'}${ce?' class="ed"':''} onchange="fc('nivel',parseInt(this.value))">${NIVEIS.slice(1).map((v,i)=>`<option value="${i+1}"${nd.nivel===i+1?' selected':''}>${v}</option>`).join('')}</select></div></div>
       <div class="fr s1"><div class="fi"><label>Setor / Diretoria</label>
         <input${ro}${ec} value="${esc(nd.setor||'')}" placeholder="Ex: Diretoria Financeira" onchange="fc('setor',this.value)"></div></div>
       <div class="fr"><div class="fi"><label>Localidade</label>
