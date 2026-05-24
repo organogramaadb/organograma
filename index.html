@@ -121,6 +121,8 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .bcancel:hover{border-color:#999}
 .bdanger{background:#fff;color:#c00;border:1px solid #fcc;border-radius:4px;padding:9px 12px;font-size:12px;cursor:pointer}
 .bdanger:hover{background:#fff5f5}
+.bdel{background:#c00;color:#fff;border:1px solid #a00;border-radius:4px;padding:9px 10px;font-size:12px;cursor:pointer}
+.bdel:hover{background:#a00}
 .mov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:500}
 .mov.on{display:flex}
 .modal{background:#fff;border-radius:8px;width:480px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.22)}
@@ -218,6 +220,7 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
       <div class="pbdy" id="pbdy"><div class="pmt"><div class="pmt-i">&#9633;</div><div class="pmt-t">Clique em um card<br>para ver os detalhes</div></div></div>
       <div class="pact" id="pact" style="display:none">
         <button class="bdanger" onclick="confirmDeact()">Inativar</button>
+        <button class="bdel" onclick="confirmDelete()">&#128465; Excluir</button>
         <button class="bcancel" onclick="closePanel()">Cancelar</button>
         <button class="bsave" id="bsv" onclick="saveNode()">Salvar</button>
       </div>
@@ -507,6 +510,32 @@ function saveNode(){
   $('phT').textContent=nd.status==='Vaga'?'Posição em Aberto':(nd.nome_pessoa||NIVEIS[nd.nivel]);
   populateFilters();updateStats();renderChart();
   requestAnimationFrame(()=>{document.querySelectorAll('.ocard').forEach(c=>c.classList.toggle('sel',c.dataset.id===nd.id));});
+}
+
+function confirmDelete(){
+  if(!S.editData)return;
+  const kids=DB.nodes.filter(n=>n.pai_id===S.editData.id);
+  if(kids.length>0){
+    toast('Este card tem '+kids.length+' subnível(is). Exclua-os primeiro.','err');
+    return;
+  }
+  $('mConfT').textContent='Excluir Card';
+  $('mConfM').textContent='Tem certeza? O card "'+( S.editData.nome_pessoa||NIVEIS[S.editData.nivel]||'este nível')+'" será removido permanentemente. Esta ação não pode ser desfeita.';
+  $('mConfB').onclick=deleteNode;
+  openM('mConf');
+}
+function deleteNode(){
+  closeM('mConf');
+  if(!S.editData)return;
+  const id=S.editData.id;
+  DB.nodes=DB.nodes.filter(n=>n.id!==id);
+  S.expanded.delete(id);
+  lsSave();
+  gasPost('deleteNode',{id}).then(()=>{});
+  toast('Card excluído','ok');
+  closePanel();
+  updateStats();
+  renderChart();
 }
 
 function confirmDeact(){
