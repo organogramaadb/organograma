@@ -160,7 +160,7 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .staff-spacer.no-reg::before{height:52%}
 .staff-arm-inner{position:absolute;top:50%;left:0;transform:translateY(-50%);display:flex;align-items:flex-start}
 .staff-h-line{width:40px;flex-shrink:0;align-self:center;border-top:2px dashed #7a8fa8}
-.staff-cards-col{display:flex;flex-direction:column;gap:10px}
+.staff-cards-col{display:flex;flex-direction:row;gap:10px;align-items:flex-start}
 .ocard.staff-card{border-style:dashed;border-color:#7a8fa8;background:#f5f7fb}
 .ocard.staff-card .ocard-hd{background:#3d5166}
 @media print{#lo,header,#sb,#tb,#sp,.mov{display:none!important}body,html{overflow:visible;height:auto}#main,#oa,#oc{overflow:visible;height:auto}}
@@ -421,7 +421,7 @@ function mkNode(node,cm){
   if(!isStaff&&S.expanded.has(node.id)&&allKids.length){
     // Galho lateral STAFF — espaçador com altura suficiente para o card caber
     if(staffKids.length){
-      const spacerH=staffKids.length*120+(staffKids.length-1)*10+20;
+      const spacerH=140;
       const spacer=document.createElement('div');
       spacer.className='staff-spacer'+(regKids.length?'':' no-reg');
       spacer.style.height=spacerH+'px';
