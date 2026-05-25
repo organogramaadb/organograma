@@ -155,10 +155,11 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 #toast.err{background:#b00}
 #toast.ok{background:#1a5c1a}
 /* Staff lateral — galho ao lado da linha vertical */
-.staff-arm-wrap{position:relative;height:30px;width:0;overflow:visible;align-self:center;margin-bottom:-30px;flex-shrink:0}
-.staff-arm-wrap.no-reg::before{content:'';position:absolute;top:0;left:0;width:0;height:50%;border-left:1px solid #ccc}
-.staff-arm-inner{position:absolute;top:50%;left:0;transform:translateY(-50%);display:flex;align-items:flex-start;pointer-events:auto}
-.staff-h-line{width:38px;flex-shrink:0;align-self:center;border-top:2px dashed #7a8fa8}
+.staff-spacer{position:relative;width:0;align-self:center;overflow:visible;flex-shrink:0}
+.staff-spacer::before{content:'';position:absolute;top:0;left:0;width:0;height:100%;border-left:1px solid #ccc}
+.staff-spacer.no-reg::before{height:52%}
+.staff-arm-inner{position:absolute;top:50%;left:0;transform:translateY(-50%);display:flex;align-items:flex-start}
+.staff-h-line{width:40px;flex-shrink:0;align-self:center;border-top:2px dashed #7a8fa8}
 .staff-cards-col{display:flex;flex-direction:column;gap:10px}
 .ocard.staff-card{border-style:dashed;border-color:#7a8fa8;background:#f5f7fb}
 .ocard.staff-card .ocard-hd{background:#3d5166}
@@ -418,17 +419,19 @@ function mkNode(node,cm){
   const li=document.createElement('li');li.className='vl';
   li.appendChild(mkCard(node,allKids));
   if(!isStaff&&S.expanded.has(node.id)&&allKids.length){
-    // Galho lateral STAFF — height:0 no fluxo, sobrepõe a linha vertical dos filhos
+    // Galho lateral STAFF — espaçador com altura suficiente para o card caber
     if(staffKids.length){
-      const armWrap=document.createElement('div');
-      armWrap.className='staff-arm-wrap'+(regKids.length?'':' no-reg');
+      const spacerH=staffKids.length*120+(staffKids.length-1)*10+20;
+      const spacer=document.createElement('div');
+      spacer.className='staff-spacer'+(regKids.length?'':' no-reg');
+      spacer.style.height=spacerH+'px';
       const armInner=document.createElement('div');armInner.className='staff-arm-inner';
       const hline=document.createElement('div');hline.className='staff-h-line';
       const col=document.createElement('div');col.className='staff-cards-col';
       staffKids.forEach(k=>col.appendChild(mkCard(k,[])));
       armInner.appendChild(hline);armInner.appendChild(col);
-      armWrap.appendChild(armInner);
-      li.appendChild(armWrap);
+      spacer.appendChild(armInner);
+      li.appendChild(spacer);
     }
     if(regKids.length){
       const ul=document.createElement('ul');
