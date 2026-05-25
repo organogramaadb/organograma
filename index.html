@@ -154,17 +154,12 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 #toast.on{opacity:1;transform:translateY(0)}
 #toast.err{background:#b00}
 #toast.ok{background:#1a5c1a}
-/* Staff strip — assessoria lateral */
-.staff-strip{display:flex;flex-direction:column;align-items:center;padding-top:18px;position:relative}
-.staff-strip::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:18px;border-left:2px dashed #7a8fa8}
-.staff-row{display:flex;position:relative}
-.staff-slot{display:flex;flex-direction:column;align-items:center;padding:0 10px;position:relative}
-.staff-slot::before{content:'';position:absolute;top:0;right:50%;width:50%;height:0;border-top:2px dashed #7a8fa8}
-.staff-slot::after{content:'';position:absolute;top:0;left:50%;width:50%;height:0;border-top:2px dashed #7a8fa8}
-.staff-slot:only-child::before,.staff-slot:only-child::after{display:none}
-.staff-slot:first-child::before{border:none}
-.staff-slot:last-child::after{border:none}
-.staff-vdrop{width:0;height:18px;border-left:2px dashed #7a8fa8;align-self:center;flex-shrink:0}
+/* Staff lateral — galho ao lado da linha vertical */
+.staff-arm-wrap{position:relative;height:30px;width:0;overflow:visible;align-self:center;margin-bottom:-30px;flex-shrink:0}
+.staff-arm-wrap.no-reg::before{content:'';position:absolute;top:0;left:0;width:0;height:50%;border-left:1px solid #ccc}
+.staff-arm-inner{position:absolute;top:50%;left:0;transform:translateY(-50%);display:flex;align-items:flex-start;pointer-events:auto}
+.staff-h-line{width:38px;flex-shrink:0;align-self:center;border-top:2px dashed #7a8fa8}
+.staff-cards-col{display:flex;flex-direction:column;gap:10px}
 .ocard.staff-card{border-style:dashed;border-color:#7a8fa8;background:#f5f7fb}
 .ocard.staff-card .ocard-hd{background:#3d5166}
 @media print{#lo,header,#sb,#tb,#sp,.mov{display:none!important}body,html{overflow:visible;height:auto}#main,#oa,#oc{overflow:visible;height:auto}}
@@ -423,18 +418,17 @@ function mkNode(node,cm){
   const li=document.createElement('li');li.className='vl';
   li.appendChild(mkCard(node,allKids));
   if(!isStaff&&S.expanded.has(node.id)&&allKids.length){
+    // Galho lateral STAFF — height:0 no fluxo, sobrepõe a linha vertical dos filhos
     if(staffKids.length){
-      const strip=document.createElement('div');strip.className='staff-strip';
-      const row=document.createElement('div');row.className='staff-row';
-      staffKids.forEach(k=>{
-        const slot=document.createElement('div');slot.className='staff-slot';
-        const vd=document.createElement('div');vd.className='staff-vdrop';
-        slot.appendChild(vd);
-        slot.appendChild(mkCard(k,[]));
-        row.appendChild(slot);
-      });
-      strip.appendChild(row);
-      li.appendChild(strip);
+      const armWrap=document.createElement('div');
+      armWrap.className='staff-arm-wrap'+(regKids.length?'':' no-reg');
+      const armInner=document.createElement('div');armInner.className='staff-arm-inner';
+      const hline=document.createElement('div');hline.className='staff-h-line';
+      const col=document.createElement('div');col.className='staff-cards-col';
+      staffKids.forEach(k=>col.appendChild(mkCard(k,[])));
+      armInner.appendChild(hline);armInner.appendChild(col);
+      armWrap.appendChild(armInner);
+      li.appendChild(armWrap);
     }
     if(regKids.length){
       const ul=document.createElement('ul');
