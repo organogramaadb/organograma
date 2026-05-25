@@ -53,7 +53,8 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .tsep{width:1px;height:20px;background:#e5e5e5;flex-shrink:0}
 .tflt select{border:1px solid #ddd;border-radius:4px;padding:5px 7px;font-size:12px;color:#555;background:#fff;outline:none;cursor:pointer}
 .tsp{flex:1}
-#oc{flex:1;overflow:auto;padding:36px 60px 60px;cursor:grab;user-select:none;min-height:0}
+#oc{flex:1;overflow:auto;cursor:grab;user-select:none;min-height:0}
+#orgRoot{min-width:100%;width:max-content;padding:36px 60px 60px;box-sizing:border-box}
 #oc.dragging{cursor:grabbing}
 #oc::-webkit-scrollbar{width:7px;height:7px}
 #oc::-webkit-scrollbar-track{background:#ececec}
@@ -83,6 +84,10 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .cor-sw[data-cor="#1a3a5c"]{background:#1a3a5c}
 .cor-sw[data-cor="#888"]{background:#888}
 .cor-sw[data-cor="#7a0000"]{background:#7a0000}
+.cor-sw[data-cor="body-"]{background:#fff;border:1px solid #ddd}
+.cor-sw[data-cor="body-#dbeeff"]{background:#dbeeff}
+.cor-sw[data-cor="body-#fffde0"]{background:#fffde0}
+.cor-sw[data-cor="body-#ffe8e8"]{background:#ffe8e8}
 .ocard-nv{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
 .ocard-st{font-size:11px;color:rgba(255,255,255,.75);margin-top:4px;line-height:1.3;font-style:italic}
 .ocard-bd{padding:10px 12px 4px}
@@ -284,7 +289,7 @@ const DEMO_NODES=[
   {id:'N001',nivel:1,nome_pessoa:'',localidade:'',setor:'',pai_id:null,status:'Ativo',
    vinculo:'',email:'',tel:'',admissao:'',obs:'',
    escopo:'',responsabilidades:'',entregas:'',projetos:'',
-   desenvolvimento:'',visao_ocupacao:0,visao_desempenho:'',ult_at:'',ult_usr:'',cor_header:''}
+   desenvolvimento:'',visao_ocupacao:0,visao_desempenho:'',ult_at:'',ult_usr:'',cor_header:'',cor_body:''}
 ];
 const S={user:null,selId:null,tab:'d',expanded:new Set(['N001']),editData:null,subParent:null,filters:{dir:'',loc:'',st:'',q:''}};
 let DB={nodes:[],access:[],log:[]};
@@ -422,18 +427,37 @@ function mkCard(node,kids){
   const expBtn=hasKids?`<button class="btn-exp" onclick="event.stopPropagation();toggleNode('${node.id}')">${isExp?'&#9650;':'&#9660;'}</button>`:'';
   const addBtn=canAdd?`<button class="btn-sub" onclick="event.stopPropagation();openAddSub('${node.id}')">+ N&#237;vel abaixo</button>`:'';
   const hdStyle=node.status==='Vaga'?'':((node.cor_header&&node.cor_header!=='')?`style="background:${node.cor_header}"`:'');
+  const bdStyle=(node.cor_body&&node.cor_body!=='')?`style="background:${node.cor_body}"`:'';
   d.innerHTML=`<div class="ocard-hd" ${hdStyle}><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
-    <div class="ocard-bd"><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
+    <div class="ocard-bd" ${bdStyle}><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
     <div class="ocard-ft">${addBtn}${expBtn}</div>`;
   return d;
 }
+function centerOnCard(id,delay){
+  setTimeout(()=>{
+    const oc=$('oc'),card=document.querySelector(`.ocard[data-id="${id}"]`);
+    if(!oc||!card)return;
+    const or=oc.getBoundingClientRect(),cr=card.getBoundingClientRect();
+    const tl=oc.scrollLeft+(cr.left-or.left)-(or.width-cr.width)/2;
+    const tt=oc.scrollTop+(cr.top-or.top)-(or.height-cr.height)/2;
+    oc.scrollTo({left:Math.max(0,tl),top:Math.max(0,tt),behavior:'smooth'});
+  },delay||80);
+}
 function toggleNode(id){
-  if(S.expanded.has(id)){S.expanded.delete(id);renderChart();}
-  else{
+  if(S.expanded.has(id)){
+    S.expanded.delete(id);
+    renderChart();
+    // ao fechar, centraliza no pai (ou no próprio nó se for raiz)
+    const node=DB.nodes.find(n=>n.id===id);
+    const targetId=node&&node.pai_id?node.pai_id:id;
+    centerOnCard(targetId);
+  } else {
     const node=DB.nodes.find(n=>n.id===id);
     if(node)DB.nodes.filter(n=>n.pai_id===node.pai_id&&n.id!==id).forEach(n=>S.expanded.delete(n.id));
-    S.expanded.add(id);renderChart();
-    requestAnimationFrame(()=>{const el=document.querySelector(`.ocard[data-id="${id}"]`);if(el)el.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});});
+    S.expanded.add(id);
+    renderChart();
+    // ao abrir, centraliza no nó expandido
+    centerOnCard(id);
   }
 }
 function expAll(){DB.nodes.forEach(n=>S.expanded.add(n.id));renderChart();}
@@ -458,7 +482,12 @@ function fc(field,value){if(S.editData)S.editData[field]=value;}
 function setCor(cor){
   if(!S.editData||!S.user.editar)return;
   S.editData.cor_header=cor;
-  document.querySelectorAll('.cor-sw').forEach(el=>el.classList.toggle('ativo',el.dataset.cor===cor));
+  document.querySelectorAll('.cor-sw[data-cor^="#"],[data-cor=""]').forEach(el=>el.classList.toggle('ativo',el.dataset.cor===cor));
+}
+function setCorBody(cor){
+  if(!S.editData||!S.user.editar)return;
+  S.editData.cor_body=cor;
+  document.querySelectorAll('.cor-sw[data-cor^="body-"]').forEach(el=>el.classList.toggle('ativo',el.dataset.cor==='body-'+cor));
 }
 function renderPanelTab(t){
   const nd=S.editData,ce=S.user.editar,ro=ce?'':' readonly',ec=ce?' class="ed"':'';
@@ -483,6 +512,15 @@ function renderPanelTab(t){
           <span title="Vermelho Escuro" class="cor-sw${nd.cor_header==='#7a0000'?' ativo':''}" data-cor="#7a0000" onclick="setCor('#7a0000')"></span>
           <span style="font-size:11px;color:#aaa;margin-left:4px">Clique para escolher</span>`
         :`<span class="cor-sw" style="background:${nd.cor_header||'#111'};cursor:default"></span><span style="font-size:11px;color:#aaa;margin-left:8px">Sem permissão de edição</span>`}
+        </div></div></div>
+      <div class="fr s1"><div class="fi"><label>Cor do Fundo do Card</label>
+        <div class="cor-picker">${ce?`
+          <span title="Branco (padrão)" class="cor-sw${(nd.cor_body||'')==''?' ativo':''}" data-cor="body-" onclick="setCorBody('')"></span>
+          <span title="Azul Claro" class="cor-sw${nd.cor_body==='#dbeeff'?' ativo':''}" data-cor="body-#dbeeff" onclick="setCorBody('#dbeeff')"></span>
+          <span title="Amarelo Claro" class="cor-sw${nd.cor_body==='#fffde0'?' ativo':''}" data-cor="body-#fffde0" onclick="setCorBody('#fffde0')"></span>
+          <span title="Vermelho Claro" class="cor-sw${nd.cor_body==='#ffe8e8'?' ativo':''}" data-cor="body-#ffe8e8" onclick="setCorBody('#ffe8e8')"></span>
+          <span style="font-size:11px;color:#aaa;margin-left:4px">Fundo da área de nome</span>`
+        :`<span class="cor-sw" style="background:${nd.cor_body||'#fff'};cursor:default;border:1px solid #ddd"></span><span style="font-size:11px;color:#aaa;margin-left:8px">Sem permissão</span>`}
         </div></div></div>
       <div class="fr"><div class="fi"><label>Localidade</label>
         <input${ro}${ec} value="${esc(nd.localidade||'')}" onchange="fc('localidade',this.value)"></div>
