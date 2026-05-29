@@ -93,7 +93,7 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .ocard-bd{padding:10px 12px 4px}
 .ocard-nm{font-size:13px;font-weight:600;color:#111;line-height:1.4;min-height:20px}
 .ocard-lc{font-size:11px;color:#888;margin-top:3px;min-height:16px}
-.ocard-ft{padding:6px 8px 8px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f2f2f2;margin-top:8px}
+.ocard-ft{padding:6px 8px 8px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(0,0,0,.08);margin-top:8px}
 .btn-sub{background:none;border:1px solid #e0e0e0;border-radius:3px;padding:3px 8px;font-size:10px;color:#aaa;cursor:pointer;white-space:nowrap;transition:all .15s;line-height:1.4}
 .btn-sub:hover{border-color:#aaa;color:#444;background:#f8f8f8}
 .btn-exp{background:none;border:none;cursor:pointer;padding:3px 6px;font-size:14px;color:#ccc;border-radius:3px;line-height:1;transition:color .15s}
@@ -456,9 +456,9 @@ function mkCard(node,kids){
   const expBtn=hasKids?`<button class="btn-exp" onclick="event.stopPropagation();toggleNode('${node.id}')">${isExp?'&#9650;':'&#9660;'}</button>`:'';
   const addBtn=canAdd?`<button class="btn-sub" onclick="event.stopPropagation();openAddSub('${node.id}')">+ N&#237;vel abaixo</button>`:'';
   const hdStyle=node.status==='Vaga'?'':((node.cor_header&&node.cor_header!=='')?`style="background:${node.cor_header}"`:'');
-  const bdStyle=(node.cor_body&&node.cor_body!=='')?`style="background:${node.cor_body}"`:'';
+  if(node.cor_body&&node.cor_body!=='')d.style.background=node.cor_body;
   d.innerHTML=`<div class="ocard-hd" ${hdStyle}><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
-    <div class="ocard-bd" ${bdStyle}><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
+    <div class="ocard-bd"><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
     <div class="ocard-ft">${addBtn}${expBtn}</div>`;
   return d;
 }
