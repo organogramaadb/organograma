@@ -43,7 +43,7 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .blo:hover{border-color:#555;color:#ccc}
 #sb{height:42px;background:#1a1a1a;display:flex;align-items:center;padding:0 16px;gap:20px;flex-shrink:0;border-bottom:1px solid #222}
 .sv{font-size:15px;font-weight:700;color:#fff;line-height:1}
-.sl{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.sl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
 .ssep{width:1px;height:22px;background:#222}
 #main{flex:1;display:flex;overflow:hidden}
 #oa{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -88,7 +88,10 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
 .cor-sw[data-cor="body-#dbeeff"]{background:#dbeeff}
 .cor-sw[data-cor="body-#fffde0"]{background:#fffde0}
 .cor-sw[data-cor="body-#ffe8e8"]{background:#ffe8e8}
-.ocard-nv{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
+.ocard-nv{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.3;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.ocard-badge{background:rgba(255,255,255,.2);color:#fff;border-radius:8px;font-size:10px;font-weight:700;padding:1px 6px;letter-spacing:0;min-width:18px;text-align:center;flex-shrink:0;text-transform:none;line-height:1.5}
+.ocard.area-sd{border-color:#7799aa}
+.ocard.area-sd .ocard-hd{background:#2c4a5a}
 .ocard-st{font-size:11px;color:rgba(255,255,255,.75);margin-top:4px;line-height:1.3;font-style:italic}
 .ocard-bd{padding:10px 12px 4px}
 .ocard-nm{font-size:13px;font-weight:600;color:#111;line-height:1.4;min-height:20px}
@@ -222,7 +225,7 @@ header{height:var(--hh);background:#111;display:flex;align-items:center;padding:
         <div class="tflt">
           <select id="fDir" onchange="applyF()"><option value="">Todas as Diretorias</option></select>
           <select id="fLoc" onchange="applyF()" style="margin-left:6px"><option value="">Todas as Localidades</option></select>
-          <select id="fSt" onchange="applyF()" style="margin-left:6px"><option value="">Todos os Status</option><option>Ativo</option><option>Inativo</option><option>Vaga</option></select>
+          <select id="fSt" onchange="applyF()" style="margin-left:6px"><option value="">Todos os Status</option><option>Ativo</option><option>Inativo</option><option>Vaga</option><option>Área sem Denominação</option></select>
         </div>
         <div class="tsp"></div>
         <button class="tbtn" onclick="showInc()">&#9888; Inconsist.</button>
@@ -389,10 +392,19 @@ function populateFilters(){
 }
 function updateStats(){
   const ns=DB.nodes;
-  $('stA').textContent=ns.filter(n=>n.status==='Ativo').length;
+  $('stA').textContent=ns.filter(n=>n.status==='Ativo'&&n.nome_pessoa&&n.nome_pessoa.trim()).length;
   $('stV').textContent=ns.filter(n=>n.status==='Vaga').length;
   $('stP').textContent=ns.length;
   const inc=checkInc().length;$('stI').textContent=inc;$('stI').style.color=inc>0?'#f90':'#aaa';
+}
+function countActive(nodeId,cm){
+  const kids=cm[nodeId]||[];
+  let n=0;
+  kids.forEach(k=>{
+    if(k.status==='Ativo'&&k.nome_pessoa&&k.nome_pessoa.trim())n++;
+    n+=countActive(k.id,cm);
+  });
+  return n;
 }
 
 function buildChildMap(){
@@ -416,8 +428,9 @@ function mkNode(node,cm){
   const allKids=cm[node.id]||[];
   const staffKids=isStaff?[]:allKids.filter(k=>NIVEIS[k.nivel]==='STAFF');
   const regKids=isStaff?[]:allKids.filter(k=>NIVEIS[k.nivel]!=='STAFF');
+  const descCount=(!isStaff&&node.nivel>=1&&node.nivel<=7)?countActive(node.id,cm):null;
   const li=document.createElement('li');li.className='vl';
-  li.appendChild(mkCard(node,allKids));
+  li.appendChild(mkCard(node,allKids,descCount));
   if(!isStaff&&S.expanded.has(node.id)&&allKids.length){
     // Galho lateral STAFF — espaçador com altura suficiente para o card caber
     if(staffKids.length){
@@ -441,23 +454,25 @@ function mkNode(node,cm){
   }
   return li;
 }
-function mkCard(node,kids){
+function mkCard(node,kids,descCount){
   const isStaff=NIVEIS[node.nivel]==='STAFF';
   const isV=node.status==='Vaga';
+  const isAsd=node.status==='Área sem Denominação';
   const isSel=S.selId===node.id;
   const hasKids=!isStaff&&kids.length>0;
   const isExp=S.expanded.has(node.id);
   const canAdd=!isStaff&&S.user&&S.user.addN;
   const nome=isV?'&#9633; VAGA EM ABERTO':esc(node.nome_pessoa||'&#8212; sem nome &#8212;');
   const d=document.createElement('div');
-  d.className='ocard'+(isV?' vaga':'')+(isSel?' sel':'')+(isStaff?' staff-card':'');
+  d.className='ocard'+(isV?' vaga':'')+(isAsd?' area-sd':'')+(isSel?' sel':'')+(isStaff?' staff-card':'');
   d.dataset.id=node.id;
   d.onclick=e=>{e.stopPropagation();selectNode(node.id);};
   const expBtn=hasKids?`<button class="btn-exp" onclick="event.stopPropagation();toggleNode('${node.id}')">${isExp?'&#9650;':'&#9660;'}</button>`:'';
   const addBtn=canAdd?`<button class="btn-sub" onclick="event.stopPropagation();openAddSub('${node.id}')">+ N&#237;vel abaixo</button>`:'';
-  const hdStyle=node.status==='Vaga'?'':((node.cor_header&&node.cor_header!=='')?`style="background:${node.cor_header}"`:'');
+  const hdStyle=isV?'':((node.cor_header&&node.cor_header!=='')?`style="background:${node.cor_header}"`:'');
   if(node.cor_body&&node.cor_body!=='')d.style.background=node.cor_body;
-  d.innerHTML=`<div class="ocard-hd" ${hdStyle}><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
+  const badge=descCount!=null?`<span class="ocard-badge">${descCount}</span>`:'';
+  d.innerHTML=`<div class="ocard-hd" ${hdStyle}><div class="ocard-nv">${esc(NIVEIS[node.nivel]||'Nível '+node.nivel)}${badge}</div>${node.setor?`<div class="ocard-st">${esc(node.setor)}</div>`:''}</div>
     <div class="ocard-bd"><div class="ocard-nm">${nome}</div><div class="ocard-lc">${esc(node.localidade||'')}</div></div>
     <div class="ocard-ft">${addBtn}${expBtn}</div>`;
   return d;
@@ -527,7 +542,7 @@ function renderPanelTab(t){
       <div class="fr"><div class="fi"><label>Nome Completo</label>
         <input${ro}${ec} value="${esc(nd.nome_pessoa)}" onchange="fc('nome_pessoa',this.value)"></div>
         <div class="fi"><label>Status</label>
-        <select${ce?'':' disabled'} onchange="fc('status',this.value)">${['Ativo','Vaga','Inativo'].map(s=>`<option${nd.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <select${ce?'':' disabled'} onchange="fc('status',this.value)">${['Ativo','Vaga','Inativo','Área sem Denominação'].map(s=>`<option${nd.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
       </div>
       <div class="fr s1"><div class="fi"><label>Nível Hierárquico</label>
         <select${ce?'':' disabled'}${ce?' class="ed"':''} onchange="fc('nivel',parseInt(this.value))">${NIVEIS.slice(1).map((v,i)=>`<option value="${i+1}"${nd.nivel===i+1?' selected':''}>${v}</option>`).join('')}</select></div></div>
